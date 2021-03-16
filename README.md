@@ -6,7 +6,7 @@ This project will be for tracking income by shift, company, and employee. It is 
 TODO:
 - [x] Setup Git repository
 - [x] Setup basic command line shell
-- [] Setup database
-- [] Store initial data
-- [] Implement search functions
-- [] Create GUI
+- [ ] Setup database
+- [ ] Store initial data
+- [ ] Implement search functions
+- [ ] Create GUI
