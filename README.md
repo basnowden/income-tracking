@@ -16,29 +16,29 @@ TODO:
 
 Database Schema:
 TABLE users(  
-	username VARCHAR(30) NOT NULL,  
-	admin BOOLEAN,  
-	PRIMARY KEY(username)  
+&nbsp;&nbsp;&nbsp;&nbsp;username VARCHAR(30) NOT NULL,  
+&nbsp;&nbsp;&nbsp;&nbsp;admin BOOLEAN,  
+&nbsp;&nbsp;&nbsp;&nbsp;PRIMARY KEY(username)  
 );  
 
 TABLE jobs(  
-	emp_id INT GENERATED ALWAYS AS IDENTITY,  
-	username VARCHAR(30) NOT NULL,  
-	employer VARCHAR(30) NOT NULL,  
-	hourly_rate FLOAT(2),  
-	tax_rate FLOAT,  
-	PRIMARY KEY(emp_id),  
-	FOREIGN KEY(username)  
-		REFERENCES users(username)  
+&nbsp;&nbsp;&nbsp;&nbsp;emp_id INT GENERATED ALWAYS AS IDENTITY,  
+&nbsp;&nbsp;&nbsp;&nbsp;username VARCHAR(30) NOT NULL,  
+&nbsp;&nbsp;&nbsp;&nbsp;employer VARCHAR(30) NOT NULL,  
+&nbsp;&nbsp;&nbsp;&nbsp;hourly_rate FLOAT(2),  
+&nbsp;&nbsp;&nbsp;&nbsp;tax_rate FLOAT,  
+&nbsp;&nbsp;&nbsp;&nbsp;PRIMARY KEY(emp_id),  
+&nbsp;&nbsp;&nbsp;&nbsp;FOREIGN KEY(username)  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;REFERENCES users(username)  
 );  
 
 TABLE income(  
-	shift_id INT GENERATED ALWAYS AS IDENTITY,  
-	shift_date DATE NOT NULL DEFAULT CURRENT_DATE,  
-	emp_id INT NOT NULL,  
-	shift_length INTERVAL HOUR TO MINUTE,  
-	shift_income MONEY,  
-	PRIMARY KEY(shift_id),  
-	FOREIGN KEY(emp_id)  
-		REFERENCES jobs(emp_id)  
+&nbsp;&nbsp;&nbsp;&nbsp;shift_id INT GENERATED ALWAYS AS IDENTITY,  
+&nbsp;&nbsp;&nbsp;&nbsp;shift_date DATE NOT NULL DEFAULT CURRENT_DATE,  
+&nbsp;&nbsp;&nbsp;&nbsp;emp_id INT NOT NULL,  
+&nbsp;&nbsp;&nbsp;&nbsp;shift_length INTERVAL HOUR TO MINUTE,  
+&nbsp;&nbsp;&nbsp;&nbsp;shift_income MONEY,  
+&nbsp;&nbsp;&nbsp;&nbsp;PRIMARY KEY(shift_id),  
+&nbsp;&nbsp;&nbsp;&nbsp;FOREIGN KEY(emp_id)  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;REFERENCES jobs(emp_id)  
 );  
