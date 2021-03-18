@@ -43,12 +43,15 @@ def create_database(connection, query, dbname):
         raise
 
 def execute_query(connection, query):
-    connection.autocommit = False
     cursor = connection.cursor()
     try:
         cursor.execute(query)
-        result = cursor.fetchall()
+        if query.split()[0] != 'UPDATE':
+            result = cursor.fetchall()
+        else:
+            result = []
         cursor.close()
+        connection.commit()
         return result
     except Exception as e:
         print("Error: {}".format(e))
