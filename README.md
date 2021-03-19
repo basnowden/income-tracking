@@ -11,6 +11,7 @@ TODO:
 - [x] Setup database
 - [x] Store initial data
 - [ ] Implement search functions
+- [ ] Automated testing
 - [ ] Create GUI
 
 
