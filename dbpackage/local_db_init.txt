@@ -1,0 +1,268 @@
+DO $$
+	BEGIN
+		IF EXISTS (SELECT 1 FROM income) AND EXISTS (SELECT 1 from jobs) THEN
+			ALTER TABLE income DROP CONSTRAINT fk_emp_id;
+		END IF;
+		IF EXISTS (SELECT 1 FROM jobs) and EXISTS (SELECT 1 from users) THEN
+			ALTER TABLE jobs DROP CONSTRAINT fk_username;
+		END IF;
+		DROP TABLE IF EXISTS income;
+		DROP TABLE IF EXISTS jobs;
+		DROP TABLE IF EXISTS users;
+	END;
+$$;
+
+CREATE TABLE users (
+	username VARCHAR(30) NOT NULL,
+	admin boolean,
+	PRIMARY KEY(username)
+);
+
+CREATE TABLE jobs (
+	emp_id INT GENERATED ALWAYS AS IDENTITY,
+	username VARCHAR(30) NOT NULL,
+	employer VARCHAR(30) NOT NULL,
+	hourly_rate FLOAT(2),
+	tax_rate FLOAT DEFAULT 0.24, /*2019 US average income tax rate*/
+	PRIMARY KEY(emp_id),
+	CONSTRAINT fk_username
+		FOREIGN KEY(username)
+			REFERENCES users(username)
+);
+
+CREATE TABLE income (
+	shift_id INT GENERATED ALWAYS AS IDENTITY,
+	shift_date DATE NOT NULL DEFAULT CURRENT_DATE,
+	emp_id INT NOT NULL,
+	shift_length INTERVAL HOUR TO MINUTE,
+	dec_income MONEY,
+	act_income MONEY,
+	PRIMARY KEY(shift_id),
+	CONSTRAINT fk_emp_id
+		FOREIGN KEY(emp_id)
+			REFERENCES jobs(emp_id)
+);
+
+DO $$
+	DECLARE
+		pm_id INT;
+		d_id INT;
+		b_id INT;
+	BEGIN
+		INSERT INTO users (username,admin) VALUES 
+			('admininstrator',true),
+			('brady', false);
+
+		INSERT INTO jobs (username, employer,hourly_rate) VALUES 
+			('brady','Pizza Mia',8.00),
+			('brady','Dominos',7.00),
+			('brady','BAE Systems',null);
+
+		SELECT emp_id INTO pm_id FROM jobs WHERE employer = 'Pizza Mia';
+		SELECT emp_id INTO d_id FROM jobs WHERE employer = 'Dominos';
+		SELECT emp_id INTO b_id FROM jobs WHERE employer = 'BAE Systems';
+		
+		--September
+		INSERT INTO income (shift_date,emp_id,shift_length,dec_income,act_income) VALUES 
+			('SEP-11-2020',pm_id,'PT7H50M',69,47),
+			('SEP-12-2020',pm_id,'PT7H35M',62,106),
+			('SEP-13-2020',pm_id,'PT5H40M',69,91),
+			('SEP-15-2020',pm_id,'PT5H03M',27,66),
+			('SEP-17-2020',pm_id,'PT4H57M',50,80),
+			('SEP-18-2020',pm_id,'PT8H16M',63,125),
+			('SEP-19-2020',pm_id,'PT7H48M',122,135),
+			('SEP-20-2020',pm_id,'PT6H09M',35,65),
+			('SEP-22-2020',pm_id,'PT3H13M',58,72),
+			('SEP-24-2020',pm_id,'PT4H20M',47,74),
+			('SEP-25-2020',pm_id,'PT8H27M',90,106),
+			('SEP-26-2020',pm_id,'PT7H33M',90,129),
+			('SEP-27-2020',pm_id,'PT5H38M',90,120);
+		--October
+		INSERT INTO income (shift_date,emp_id,shift_length,dec_income,act_income) VALUES 
+			('SEP-29-2020',pm_id,'PT3H47M',55,71),
+			('OCT-01-2020',pm_id,'PT6H24M',86,108),
+			('OCT-02-2020',pm_id,'PT8H33M',99,125),
+			('OCT-03-2020',pm_id,'PT7H10M',79,102),
+			('OCT-04-2020',pm_id,'PT5H49M',56,60),
+			('OCT-05-2020',pm_id,'PT6H09M',30,56),
+			('OCT-06-2020',pm_id,'PT8H45M',50,79),
+			('OCT-08-2020',pm_id,'PT10H08M',125,141),
+			('OCT-09-2020',pm_id,'PT5H10M',71,105),
+			('OCT-10-2020',pm_id,'PT8H00M',71,109),
+			('OCT-11-2020',pm_id,'PT10H46M',100,157),
+			('OCT-13-2020',pm_id,'PT9H45M',9,116), /*90*/
+			('OCT-15-2020',pm_id,'PT9H51M',195,151), /*114*/
+			('OCT-16-2020',pm_id,'PT5H42M',30,84),
+			('OCT-17-2020',pm_id,'PT7H51M',70,119),
+			('OCT-18-2020',pm_id,'PT5H44M',70,98),
+			('OCT-20-2020',pm_id,'PT9H18M',53,90),
+			('OCT-22-2020',pm_id,'PT9H17M',33,79),
+			('OCT-23-2020',pm_id,'PT9H06M',89,150),
+			('OCT-24-2020',pm_id,'PT7H34M',83,133),
+			('OCT-25-2020',pm_id,'PT7H43M',53,101);
+		--November
+		INSERT INTO income (shift_date,emp_id,shift_length,dec_income,act_income) VALUES 
+			('OCT-27-2020',pm_id,'PT9H55M',53,120),
+			('OCT-29-2020',pm_id,'PT10H09M',77,79),
+			('OCT-30-2020',pm_id,'PT5H10M',65,72),
+			('OCT-31-2020',pm_id,'PT9H34M',110,168),
+			('NOV-01-2020',pm_id,'PT10H55M',114,208),
+			('NOV-03-2020',pm_id,'PT3H14M',16,16),
+			('NOV-05-2020',pm_id,'PT8H20M',70,96),
+			('NOV-06-2020',pm_id,'PT6H36M',95,125),
+			('NOV-07-2020',pm_id,'PT9H24M',110,133),
+			('NOV-08-2020',pm_id,'PT5H38M',100,125),
+			('NOV-10-2020',pm_id,'PT9H33M',65,100),
+			('NOV-12-2020',pm_id,'PT8H55M',94,121),
+			('NOV-13-2020',pm_id,'PT5H13M',70,116),
+			('NOV-14-2020',pm_id,'PT7H39M',120,152),
+			('NOV-15-2020',pm_id,'PT5H45M',47,68),
+			('NOV-17-2020',pm_id,'PT9H34M',71,122),
+			('NOV-19-2020',pm_id,'PT8H40M',123,144),
+			('NOV-20-2020',pm_id,'PT5H56M',75,90),
+			('NOV-21-2020',pm_id,'PT7H39M',95,166),
+			('NOV-22-2020',pm_id,'PT5H48M',44,72),
+			('NOV-23-2020',pm_id,'PT5H04M',30,30),
+			('NOV-25-2020',pm_id,'PT3H53M',65,87),
+			('NOV-27-2020',pm_id,'PT4H19M',56,144),
+			('NOV-28-2020',pm_id,'PT8H15M',74,138),
+			('NOV-29-2020',pm_id,'PT10H43M',115,166);
+		--December
+		INSERT INTO income (shift_date,emp_id,shift_length,dec_income,act_income) VALUES 
+			('NOV-30-2020',pm_id,'PT5H19M',48,68),
+			('DEC-01-2020',pm_id,'PT9H24M',112,138),
+			('DEC-03-2020',pm_id,'PT9H45M',99,151),
+			('DEC-04-2020',pm_id,'PT6H43M',105,132),
+			('DEC-05-2020',pm_id,'PT8H17M',95,142),
+			('DEC-06-2020',pm_id,'PT10H40M',94,152),
+			('DEC-07-2020',pm_id,'PT5H19M',22,28),
+			('DEC-08-2020',pm_id,'PT10H14M',76,97),
+			('DEC-10-2020',pm_id,'PT9H17M',91,165),
+			('DEC-11-2020',pm_id,'PT5H16M',90,109),
+			('DEC-12-2020',pm_id,'PT8H33M',108,156),
+			('DEC-13-2020',pm_id,'PT5H26M',45,73),
+			('DEC-15-2020',pm_id,'PT9H38M',84,108),
+			('DEC-17-2020',pm_id,'PT12H5M',174,185),
+			('DEC-18-2020',pm_id,'PT5H09M',67,107),
+			('DEC-19-2020',pm_id,'PT8H37M',116,141),
+			('DEC-20-2020',pm_id,'PT6H08M',68,127),
+			('DEC-22-2020',pm_id,'PT9H46M',129,160),
+			('DEC-24-2020',pm_id,'PT7H15M',73,114),
+			('DEC-26-2020',pm_id,'PT8H26M',80,112),
+			('DEC-27-2020',pm_id,'PT5H50M',57,100);
+		--January
+		INSERT INTO income (shift_date,emp_id,shift_length,dec_income,act_income) VALUES 
+			('DEC-29-2020',pm_id,'PT9H29M',84,101),
+			('DEC-31-2020',pm_id,'PT12H3M',99,139),
+			('JAN-01-2021',pm_id,'PT4H56M',53,200),
+			('JAN-02-2021',pm_id,'PT8H19M',105,116),
+			('JAN-03-2021',pm_id,'PT5H32M',39,48),
+			('JAN-04-2021',pm_id,'PT3H02M',37,38),
+			('JAN-05-2021',pm_id,'PT9H37M',82,112),
+			('JAN-07-2021',pm_id,'PT2H34M',20,28),
+			('JAN-08-2021',pm_id,'PT5H39M',78,98),
+			('JAN-09-2021',pm_id,'PT8H31M',78,128),
+			('JAN-10-2021',pm_id,'PT5H55M',81,86),
+			('JAN-11-2021',pm_id,'PT3H14M',27,27),
+			('JAN-12-2021',pm_id,'PT9H32M',87,124),
+			('JAN-14-2021',pm_id,'PT3H27M',23,35),
+			('JAN-15-2021',pm_id,'PT5H34M',111,131),
+			('JAN-16-2021',pm_id,'PT8H52M',110,134),
+			('JAN-17-2021',pm_id,'PT5H59M',60,65),
+			('JAN-18-2021',pm_id,'PT4H59M',37,49),
+			('JAN-19-2021',pm_id,'PT9H09M',76,121),
+			('JAN-21-2021',pm_id,'PT2H17M',17,13),
+			('JAN-22-2021',pm_id,'PT4H53M',92,128),
+			('JAN-23-2021',pm_id,'PT8H26M',91,145),
+			('JAN-24-2021',pm_id,'PT5H30M',52,60),
+			('JAN-25-2021',pm_id,'PT2H31M',10,20),
+			('JAN-26-2021',pm_id,'PT9H53M',141,169),
+			('JAN-28-2021',pm_id,'PT2H57M',37,52),
+			('JAN-29-2021',pm_id,'PT5H18M',67,109),
+			('JAN-30-2021',pm_id,'PT8H41M',91,140),
+			('JAN-31-2021',pm_id,'PT5H37M',49,49);
+		--February
+		INSERT INTO income (shift_date,emp_id,shift_length,dec_income,act_income) VALUES 
+			('FEB-01-2021',pm_id,'PT3H17M',17,28),
+			('FEB-02-2021',pm_id,'PT12H37M',148,162),
+			('FEB-05-2021',pm_id,'PT5H30M',99,130),
+			('FEB-06-2021',pm_id,'PT8H45M',59,96),
+			('FEB-07-2021',pm_id,'PT6H12M',78,42),
+			('FEB-08-2021',pm_id,'PT2H39M',18,15),
+			('FEB-09-2021',pm_id,'PT9H41M',105,137),
+			('FEB-10-2021',pm_id,'PT3H13M',22,28),
+			('FEB-12-2021',pm_id,'PT5H00M',58,77),
+			('FEB-13-2021',pm_id,'PT8H54M',98,145),
+			('FEB-14-2021',pm_id,'PT5H56M',71,50),
+			('FEB-16-2021',pm_id,'PT9H08M',67,128),
+			('FEB-17-2021',pm_id,'PT3H05M',48,48),
+			('FEB-19-2021',pm_id,'PT4H48M',82,104),
+			('FEB-20-2021',pm_id,'PT8H40M',115,175),
+			('FEB-21-2021',pm_id,'PT5H53M',25,57);
+		--March
+		INSERT INTO income (shift_date,emp_id,shift_length,dec_income,act_income) VALUES 
+			('FEB-23-2021',pm_id,'PT8H25M',81,96),
+			('FEB-24-2021',pm_id,'PT2H54M',22,28),
+			('FEB-26-2021',pm_id,'PT5H14M',46,72),
+			('FEB-27-2021',pm_id,'PT8H17M',61,97),
+			('FEB-28-2021',pm_id,'PT5H34M',47,54),
+			('MAR-02-2021',pm_id,'PT8H51M',92,119),
+			('MAR-03-2021',pm_id,'PT3H08M',35,41),
+			('MAR-05-2021',pm_id,'PT5H26M',74,94),
+			('MAR-06-2021',pm_id,'PT8H15M',145,176),
+			('MAR-07-2021',pm_id,'PT5H13M',32,70),
+			('MAR-09-2021',pm_id,'PT8H26M',38,89),
+			('MAR-10-2021',pm_id,'PT3H03M',25,46),
+			('MAR-12-2021',pm_id,'PT5H07M',79,109),
+			('MAR-13-2021',pm_id,'PT8H17M',139,169),
+			('MAR-14-2021',pm_id,'PT5H55M',56,69),
+			('MAR-16-2021',pm_id,'PT8H40M',50,68),
+			('MAR-17-2021',pm_id,'PT3H14M',16,19),
+			('MAR-19-2021',pm_id,'PT6H19M',86.74,131),
+			('MAR-20-2021',pm_id,'PT8H38M',99,139),
+			('MAR-21-2021',pm_id,'PT10H42M',166,213),
+			('MAR-23-2021',pm_id,'PT9H13M',67,106),
+			('MAR-24-2021',pm_id,'PT2H56M',34,39),
+			('MAR-26-2021',pm_id,'PT6H08M',63,127),
+			('MAR-27-2021',pm_id,'PT7H36M',98,135),
+			('MAR-28-2021',pm_id,'PT5H52M',57,79);
+		--Paychecks	
+		INSERT INTO income (shift_date,emp_id,shift_length,act_income) VALUES 
+			('SEP-18-2020',pm_id,'PT0H0M',87.52),
+			('SEP-25-2020',pm_id,'PT0H0M',129.78),
+			('OCT-02-2020',pm_id,'PT0H0M',92.21),
+			('OCT-09-2020',pm_id,'PT0H0M',106.87),
+			('OCT-16-2020',pm_id,'PT0H0M',131.24),
+			('OCT-16-2020',pm_id,'PT0H0M',80), /*OT*/
+			('OCT-23-2020',pm_id,'PT0H0M',149.67),
+			('OCT-30-2020',pm_id,'PT0H0M',160.52),
+			('OCT-30-2020',pm_id,'PT0H0M',40), /*OT*/
+			('NOV-06-2020',pm_id,'PT0H0M',119.70),
+			('NOV-06-2020',pm_id,'PT0H0M',80), /*OT*/
+			('NOV-13-2020',pm_id,'PT0H0M',133.43),
+			('NOV-20-2020',pm_id,'PT0H0M',133.34),
+			('NOV-27-2020',pm_id,'PT0H0M',89.50),
+			('DEC-04-2020',pm_id,'PT0H0M',81.59),
+			('DEC-11-2020',pm_id,'PT0H0M',136.29),
+			('DEC-11-2020',pm_id,'PT0H0M',120), /*OT*/
+			('DEC-18-2020',pm_id,'PT0H0M',101.88),
+			('DEC-18-2020',pm_id,'PT0H0M',40), /*OT*/
+			('DEC-25-2020',pm_id,'PT0H0M',84.40)
+			('DEC-25-2020',pm_id,'PT0H0M',40), /*OT*/
+			('DEC-31-2020',pm_id,'PT0H0M',124.40),
+			('DEC-31-2020',pm_id,'PT0H0M',40), /*OT*/
+			('JAN-08-2021',pm_id,'PT0H0M',127.15),
+			('JAN-08-2021',pm_id,'PT0H0M',40),  /*OT*/
+			('JAN-15-2021',pm_id,'PT0H0M',128.56),
+			('JAN-22-2021',pm_id,'PT0H0M',126.08),
+			('JAN-29-2021',pm_id,'PT0H0M',130.59),
+			('FEB-05-2021',pm_id,'PT0H0M',121.49),
+			('FEB-12-2021',pm_id,'PT0H0M',128.38),
+			('FEB-19-2021',pm_id,'PT0H0M',129.91),
+			('FEB-26-2021',pm_id,'PT0H0M',115.69),
+			('MAR-05-2021',pm_id,'PT0H0M',129.45),
+			('MAR-12-2021',pm_id,'PT0H0M',101.57),
+			('MAR-19-2021',pm_id,'PT0H0M',111.51),
+			('MAR-26-2021',pm_id,'PT0H0M',131.46);
+	END;
+$$;

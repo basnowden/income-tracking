@@ -1,0 +1,85 @@
+/* Top 10
+SELECT
+	TO_CHAR(shift_date,'Day') AS "Day",
+	shift_length AS "Total Hours", 
+	dec_income AS "Declared Tips", 
+	act_income AS "Total Income"
+FROM income WHERE shift_length <> 'PT0H0M'
+ORDER BY act_income
+LIMIT 10;
+*/
+/* Monthly Totals
+SELECT 
+	TO_CHAR(TO_DATE(CONCAT(EXTRACT(WEEK FROM shift_date),EXTRACT(ISOYEAR FROM shift_date),'7'),'IWIYYYID')+5,'Month') as "Month",
+	SUM(shift_length) AS "Total Hours", 
+	SUM(dec_income) AS "Declared Tips", 
+	SUM(act_income) AS "Total Income"
+FROM income WHERE shift_length <> 'PT0H0M'
+GROUP BY "Month"
+ORDER BY "Month" ASC;
+*/
+/* Weekly Totals
+SELECT 
+	CONCAT(TO_CHAR(TO_DATE(CONCAT(EXTRACT(WEEK FROM shift_date),EXTRACT(ISOYEAR FROM shift_date),'1'),'IWIYYYID'),'MM/DD/YY'),' to ',TO_CHAR(TO_DATE(CONCAT(EXTRACT(WEEK FROM shift_date),EXTRACT(ISOYEAR FROM shift_date),'7'),'IWIYYYID'),'MM/DD/YY')) as "Week",
+	SUM(shift_length) AS "Total Hours", 
+	SUM(dec_income) AS "Declared Tips", 
+	SUM(act_income) AS "Total Income"
+FROM income WHERE shift_length <> 'PT0H0M'
+GROUP BY "Week"
+ORDER BY "Week" ASC;
+*/
+/* Weekday Totals
+SELECT
+	TO_CHAR(shift_date,'Day') AS "Day",
+	SUM(shift_length) AS "Total Hours", 
+	SUM(dec_income) AS "Declared Tips", 
+	SUM(act_income) AS "Total Income"
+FROM income WHERE shift_length <> 'PT0H0M'
+GROUP BY "Day";
+*/
+/* Monthly Average
+SELECT AVG("Total Hours") as "Avg Hours",AVG("Declared Tips"::numeric)::numeric(10,2) as "Avg Declared",AVG("Total Income"::numeric)::numeric(10,2) as "Avg Total" FROM (
+	SELECT 
+		TO_CHAR(TO_DATE(CONCAT(EXTRACT(WEEK FROM shift_date),EXTRACT(ISOYEAR FROM shift_date),'7'),'IWIYYYID'),'Month') as "Month",
+		SUM(shift_length) AS "Total Hours", 
+		SUM(dec_income) AS "Declared Tips", 
+		SUM(act_income) AS "Total Income"
+	FROM income WHERE shift_length <> 'PT0H0M'
+	GROUP BY "Month"
+	ORDER BY "Month" ASC) as tot;
+*/
+/* Weekly Average
+SELECT AVG("Total Hours") as "Avg Hours",AVG("Declared Tips"::numeric)::numeric(10,2) as "Avg Declared",AVG("Total Income"::numeric)::numeric(10,2) as "Avg Total" FROM (
+	SELECT 
+		CONCAT(TO_CHAR(TO_DATE(CONCAT(EXTRACT(WEEK FROM shift_date),EXTRACT(ISOYEAR FROM shift_date),'1'),'IWIYYYID'),'MM/DD/YY'),' to ',TO_CHAR(TO_DATE(CONCAT(EXTRACT(WEEK FROM shift_date),EXTRACT(ISOYEAR FROM shift_date),'7'),'IWIYYYID'),'MM/DD/YY')) as "Week",
+		SUM(shift_length) AS "Total Hours", 
+		SUM(dec_income) AS "Declared Tips", 
+		SUM(act_income) AS "Total Income"
+	FROM income WHERE shift_length <> 'PT0H0M'
+	GROUP BY "Week") as tot;
+*/
+/* Weekday Average
+SELECT
+	TO_CHAR(shift_date,'Day') AS "Day",
+	AVG(shift_length) AS "Avg Hours", 
+	AVG(dec_income::numeric)::numeric(10,2) AS "Avg Declared", 
+	AVG(act_income::numeric)::numeric(10,2) AS "Avg Total",
+	COUNT(TO_CHAR(shift_date,'Day')) AS "Number Worked"
+FROM income WHERE shift_length <> 'PT0H0M'
+GROUP BY "Day";
+*/
+
+/*
+CREATE FUNCTION daynametonumber(day_name TEXT)
+RETURNS int LANGUAGE sql STRICT IMMUTABLE PARALLEL SAFE AS $$
+	SELECT CASE day_name
+		WHEN 'Monday' THEN 1
+        WHEN 'Tuesday' THEN 2
+        WHEN 'Wednesday' THEN 3
+        WHEN 'Thursday' THEN 4
+        WHEN 'Friday' THEN 5
+        WHEN 'Saturday' THEN 6
+        WHEN 'Sunday' THEN 7
+	END;
+$$;
+*/

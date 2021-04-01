@@ -3,6 +3,8 @@ import re
 from dbpackage import Database
 
 dbname = "it_app"
+months = {"JANUARY":1,"FEBRUARY":2,"MARCH":3,"APRIL":4,"MAY":5,"JUNE":6,"JULY":7,"AUGUST":8,"SEPTEMBER":9,"OCTOBER":10,"NOVEMBER":11,"DECEMBER":12}
+days = {'MONDAY':1,'TUESDAY':2,'WEDNESDAY':3,'THURSDAY':4,'FRIDAY':5,'SATURDAY':6,'SUNDAY':7}
 
 class ShellPrompt(Cmd):
     prompt = 'it> '
@@ -42,7 +44,15 @@ class ShellPrompt(Cmd):
         print("Opening connection")
         if self.connection is None:
             try:
-                self.connection = Database.create_connection("it_app", "postgres", "abc123", "127.0.0.1", "5432")
+                db = input("Database [{}]:".format(dbname))
+                if db == "": db = dbname
+                un = input("Connection username:")
+                pw = input("Connection password:")
+                ip = input("Connection address [localhost]:")
+                if ip == "": ip = "127.0.0.1"
+                pt = input("Connection port [5432]:")
+                if pt == "": pt = "5432"
+                self.connection = Database.create_connection(db, un, pw, ip, pt)
             except Exception as e:
                 print("Error: {}".format(e))
         else:
@@ -50,6 +60,170 @@ class ShellPrompt(Cmd):
 
     def help_connect(self):
         print("Attempt to connect to the database. Shorthand: c")
+    
+    def do_search(self, inp):
+        '''Search database using pre-defined criteria. Shorthand s'''
+        print("Verifying database connection")
+        if self.connection is None:
+            try:
+                self.do_connect(inp)
+                print("Connection established")
+            except Exception as e:
+                print("Error: {}".format(e))
+        else:
+            print("Connection verified")
+        
+        if self.connection is not None:
+            print("Searching database")
+            print("Type 'h' for search help or 'z' to exit search")
+            searching = True
+            while(searching):
+                search = input("Search: \n")
+                command = search.upper().split()
+                if command[0] == "Z" or command[0] == "EXIT" or command[0] == "QUIT":
+                    searching = False
+                elif command[0] == "H":
+                    print("Search options:")
+                    print("Top|Bottom X: Return the top X highest earning days or the bottom X lowest earning days")
+                    print("Total month|week|day: Return the overall totals grouped by the given timeframe")
+                    print("Total [month]|[weekday]: Return the total for a specific month or weekday, e.g. Total February")
+                    print("Average month|week|day: Return the overall average grouped by the given timeframe")
+                    print("Average [month]|[weekday]: Return the average for a specific month or weekday, e.g. Average Wednesday")
+                    print("Fetch [date]: Return the data for a specific date (format MMM-dd-yyyy)")
+                elif command[0] == "TOP":
+                    if command[1].isnumeric():
+                        query = "SELECT shift_date AS \"Day\", shift_length AS \"Total Hours\", dec_income AS \"Declared Tips\", act_income AS \"Total Income\" FROM income WHERE shift_length <> 'PT0H0M' ORDER BY act_income LIMIT {};".format(command[1])
+                        result = Database.execute_query(self.connection, query)
+                        for r in result:
+                            print(r)
+                    else:
+                        print("Invalid number of rows")
+                    input("Enter to continue...")
+                elif command[0] == "BOTTOM":
+                    if command[1].isnumeric():
+                        query = "SELECT shift_date AS \"Day\", shift_length AS \"Total Hours\", dec_income AS \"Declared Tips\", act_income AS \"Total Income\" FROM income WHERE shift_length <> 'PT0H0M' ORDER BY act_income DESC LIMIT {};".format(command[1])
+                        result = Database.execute_query(self.connection, query)
+                        for r in result:
+                            print(r)
+                    else:
+                        print("Invalid number of rows")
+                    input("Enter to continue...")
+                elif command[0] == "TOTAL":
+                    if len(command) < 2:
+                        command.append("")
+                    if command[1] == "MONTH":
+                        query = "SELECT "
+                        query += "TO_CHAR(TO_DATE(CONCAT(EXTRACT(WEEK FROM shift_date),EXTRACT(ISOYEAR FROM shift_date),'7'),'IWIYYYID')+5,'Month') as \"Month\", "
+                        query += "SUM(shift_length) AS \"Total Hours\", SUM(dec_income) AS \"Declared Tips\", SUM(act_income) AS \"Total Income\" "
+                        query += "FROM income WHERE shift_length <> 'PT0H0M' "
+                        query += "GROUP BY TO_CHAR(TO_DATE(CONCAT(EXTRACT(WEEK FROM shift_date),EXTRACT(ISOYEAR FROM shift_date),'7'),'IWIYYYID')+5,'Month') "
+                        query += "ORDER BY TO_CHAR(TO_DATE(CONCAT(EXTRACT(WEEK FROM shift_date),EXTRACT(ISOYEAR FROM shift_date),'7'),'IWIYYYID')+5,'Month') ASC;"
+                        result = Database.execute_query(self.connection, query)
+                        for r in result:
+                            print(r)
+                    elif command[1] == "WEEK":
+                        query = "SELECT "
+                        query += "CONCAT(TO_CHAR(TO_DATE(CONCAT(EXTRACT(WEEK FROM shift_date),EXTRACT(ISOYEAR FROM shift_date),'1'),'IWIYYYID'),'MM/DD/YY'),' to ',TO_CHAR(TO_DATE(CONCAT(EXTRACT(WEEK FROM shift_date),EXTRACT(ISOYEAR FROM shift_date),'7'),'IWIYYYID'),'MM/DD/YY')), "
+                        query += "SUM(shift_length) AS \"Total Hours\", SUM(dec_income) AS \"Declared Tips\", SUM(act_income) AS \"Total Income\" "
+                        query += "FROM income WHERE shift_length <> 'PT0H0M' "
+                        query += "GROUP BY CONCAT(TO_CHAR(TO_DATE(CONCAT(EXTRACT(WEEK FROM shift_date),EXTRACT(ISOYEAR FROM shift_date),'1'),'IWIYYYID'),'MM/DD/YY'),' to ',TO_CHAR(TO_DATE(CONCAT(EXTRACT(WEEK FROM shift_date),EXTRACT(ISOYEAR FROM shift_date),'7'),'IWIYYYID'),'MM/DD/YY')) "
+                        query += "ORDER BY CONCAT(TO_CHAR(TO_DATE(CONCAT(EXTRACT(WEEK FROM shift_date),EXTRACT(ISOYEAR FROM shift_date),'1'),'IWIYYYID'),'MM/DD/YY'),' to ',TO_CHAR(TO_DATE(CONCAT(EXTRACT(WEEK FROM shift_date),EXTRACT(ISOYEAR FROM shift_date),'7'),'IWIYYYID'),'MM/DD/YY')) ASC;"
+                        result = Database.execute_query(self.connection, query)
+                        for r in result:
+                            print(r)
+                    elif command[1] == "DAY":
+                        query = "SELECT "
+                        query += "TO_CHAR(shift_date,'Day'), SUM(shift_length) AS \"Total Hours\", SUM(dec_income) AS \"Declared Tips\", SUM(act_income) AS \"Total Income\" "
+                        query += "FROM income WHERE shift_length <> 'PT0H0M' GROUP BY TO_CHAR(shift_date,'Day');"
+                        result = Database.execute_query(self.connection, query)
+                        for r in result:
+                            print(r)
+                    elif command[1] in months:
+                        query = "SELECT "
+                        query += "TO_CHAR(TO_DATE(CONCAT(EXTRACT(WEEK FROM shift_date),EXTRACT(ISOYEAR FROM shift_date),'7'),'IWIYYYID'),'Month'), "
+                        query += "SUM(shift_length) AS \"Total Hours\", SUM(dec_income) AS \"Declared Tips\", SUM(act_income) AS \"Total Income\" "
+                        query += "FROM income WHERE shift_length <> 'PT0H0M' AND EXTRACT(MONTH FROM shift_date)::INTEGER = {} ".format(months[command[1]])
+                        query += "GROUP BY TO_CHAR(TO_DATE(CONCAT(EXTRACT(WEEK FROM shift_date),EXTRACT(ISOYEAR FROM shift_date),'7'),'IWIYYYID'),'Month');"
+                        result = Database.execute_query(self.connection, query)
+                        for r in result:
+                            print(r)
+                    elif command[1] in days:
+                        query = "SELECT "
+                        query += "TO_CHAR(shift_date,'Day'), SUM(shift_length) AS \"Total Hours\", SUM(dec_income) AS \"Declared Tips\", SUM(act_income) AS \"Total Income\" "
+                        query += "FROM income WHERE shift_length <> 'PT0H0M' AND EXTRACT(ISODOW FROM shift_date)::INTEGER = {} GROUP BY TO_CHAR(shift_date,'Day');".format(days[command[1]])
+                        result = Database.execute_query(self.connection, query)
+                        for r in result:
+                            print(r)
+                    else:
+                        print("Invalid timeframe: {}".format(command[1]))
+                    input("Enter to continue...")
+                elif command[0] == "AVERAGE":
+                    if len(command) < 2:
+                        command.append("")
+                    if command[1] == "MONTH":
+                        query = "SELECT "
+                        query += "AVG(\"Total Hours\") as \"Avg Hours\",AVG(\"Declared Tips\"::numeric)::numeric(10,2) as \"Avg Declared\",AVG(\"Total Income\"::numeric)::numeric(10,2) as \"Avg Total\" FROM (SELECT "
+                        query += "TO_CHAR(TO_DATE(CONCAT(EXTRACT(WEEK FROM shift_date),EXTRACT(ISOYEAR FROM shift_date),'7'),'IWIYYYID'),'Month'), "
+                        query += "SUM(shift_length) AS \"Total Hours\", SUM(dec_income) AS \"Declared Tips\", SUM(act_income) AS \"Total Income\" "
+                        query += "FROM income WHERE shift_length <> 'PT0H0M' "
+                        query += "GROUP BY TO_CHAR(TO_DATE(CONCAT(EXTRACT(WEEK FROM shift_date),EXTRACT(ISOYEAR FROM shift_date),'7'),'IWIYYYID'),'Month') "
+                        query += "ORDER BY TO_CHAR(TO_DATE(CONCAT(EXTRACT(WEEK FROM shift_date),EXTRACT(ISOYEAR FROM shift_date),'7'),'IWIYYYID'),'Month') ASC) as tot;"
+                        result = Database.execute_query(self.connection, query)
+                        for r in result:
+                            print(r)
+                    elif command[1] == "WEEK":
+                        query = "SELECT "
+                        query += "AVG(\"Total Hours\") as \"Avg Hours\",AVG(\"Declared Tips\"::numeric)::numeric(10,2) as \"Avg Declared\",AVG(\"Total Income\"::numeric)::numeric(10,2) as \"Avg Total\" FROM (SELECT "
+                        query += "CONCAT(TO_CHAR(TO_DATE(CONCAT(EXTRACT(WEEK FROM shift_date),EXTRACT(ISOYEAR FROM shift_date),'1'),'IWIYYYID'),'MM/DD/YY'),' to ',TO_CHAR(TO_DATE(CONCAT(EXTRACT(WEEK FROM shift_date),EXTRACT(ISOYEAR FROM shift_date),'7'),'IWIYYYID'),'MM/DD/YY')), "
+                        query += "SUM(shift_length) AS \"Total Hours\", SUM(dec_income) AS \"Declared Tips\", SUM(act_income) AS \"Total Income\" "
+                        query += "FROM income WHERE shift_length <> 'PT0H0M' "
+                        query += "GROUP BY CONCAT(TO_CHAR(TO_DATE(CONCAT(EXTRACT(WEEK FROM shift_date),EXTRACT(ISOYEAR FROM shift_date),'1'),'IWIYYYID'),'MM/DD/YY'),' to ',TO_CHAR(TO_DATE(CONCAT(EXTRACT(WEEK FROM shift_date),EXTRACT(ISOYEAR FROM shift_date),'7'),'IWIYYYID'),'MM/DD/YY')) "
+                        query += "ORDER BY CONCAT(TO_CHAR(TO_DATE(CONCAT(EXTRACT(WEEK FROM shift_date),EXTRACT(ISOYEAR FROM shift_date),'1'),'IWIYYYID'),'MM/DD/YY'),' to ',TO_CHAR(TO_DATE(CONCAT(EXTRACT(WEEK FROM shift_date),EXTRACT(ISOYEAR FROM shift_date),'7'),'IWIYYYID'),'MM/DD/YY')) ASC) as tot;"
+                        result = Database.execute_query(self.connection, query)
+                        for r in result:
+                            print(r)
+                    elif command[1] == "DAY":
+                        query = "SELECT "
+                        query += "TO_CHAR(shift_date,'Day'), AVG(shift_length) AS \"Average Hours\", AVG(dec_income) AS \"Average Declared Tips\", AVG(act_income) AS \"Average Income\",COUNT(TO_CHAR(shift_date,'Day')) AS \"Number Worked\" "
+                        query += "FROM income WHERE shift_length <> 'PT0H0M' GROUP BY TO_CHAR(shift_date,'Day');"
+                        result = Database.execute_query(self.connection, query)
+                        for r in result:
+                            print(r)
+                    elif command[1] in months:
+                        query = "SELECT "
+                        query += "TO_CHAR(TO_DATE(CONCAT(EXTRACT(WEEK FROM shift_date),EXTRACT(ISOYEAR FROM shift_date),'7'),'IWIYYYID'),'Month'), "
+                        query += "AVG(shift_length) AS \"Average Hours\", AVG(dec_income::numeric)::numeric(10,2) as \"Avg Declared\", AVG(act_income::numeric)::numeric(10,2) as \"Avg Total\" "
+                        query += "FROM income WHERE shift_length <> 'PT0H0M' AND EXTRACT(MONTH FROM shift_date)::INTEGER = {} ".format(months[command[1]])
+                        query += "GROUP BY TO_CHAR(TO_DATE(CONCAT(EXTRACT(WEEK FROM shift_date),EXTRACT(ISOYEAR FROM shift_date),'7'),'IWIYYYID'),'Month');"
+                        result = Database.execute_query(self.connection, query)
+                        for r in result:
+                            print(r)
+                    elif command[1] in days:
+                        query = "SELECT "
+                        query += "TO_CHAR(shift_date,'Day'), AVG(shift_length) AS \"Average Hours\", AVG(dec_income::numeric)::numeric(10,2) AS \"Average Declared Tips\", AVG(act_income::numeric)::numeric(10,2) AS \"Average Income\" "
+                        query += "FROM income WHERE shift_length <> 'PT0H0M' AND EXTRACT(ISODOW FROM shift_date)::INTEGER = {} GROUP BY TO_CHAR(shift_date,'Day');".format(days[command[1]])
+                        result = Database.execute_query(self.connection, query)
+                        for r in result:
+                            print(r)
+                    else:
+                        print("Invalid timeframe: {}".format(command[1]))
+                    input("Enter to continue...")
+                elif command[0] == "FETCH":
+                    if len(command) < 2:
+                        command.append("")
+                    sdchk = re.fullmatch("((SEP|APR|JUN|NOV)-([0][1-9]|[12]\\d|30)|(JAN|MAR|MAY|JUL|AUG|OCT|DEC)-([0][1-9]|[12]\\d|3[01])|(FEB)-([0][1-9]|1\\d|2[0-9]))-(\\d\\d\\d\\d)",command[1]) is not None
+                    if sdchk:
+                        query = "SELECT "
+                        query += "* FROM income WHERE shift_date = '{}';".format(command[1])
+                        result = Database.execute_query(self.connection, query)
+                        for r in result:
+                            print(r)
+                    input("Enter to continue...")
+                else:
+                    print("Command {} not recognized".format(command[0]))
+    
+    def help_search(self):
+        print("Search database using pre-defined criteria. Shorthand: s")
 
     #TODO: remove after inital testing is complete
     def do_query(self, inp):
@@ -216,5 +390,7 @@ class ShellPrompt(Cmd):
             return self.do_connect(inp)
         elif command == 'q':
             return self.do_query(" ".join(inpList[1:]))
+        elif command == 's':
+            return self.do_search(inp);
         else:
             print("Default: {}. Arguments: {}".format(command, inp))
