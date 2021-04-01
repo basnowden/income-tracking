@@ -1,7 +1,7 @@
-dbfunctions/db_fill.txt
-dbfuncitons/local_db_init.txt
-dbfunctions/db_test.txt
-dbfunctions/function_ideas.txt
+dbpackage/db_fill.txt
+dbpackage/local_db_init.txt
+dbpackage/db_test.txt
+dbpackage/function_ideas.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
